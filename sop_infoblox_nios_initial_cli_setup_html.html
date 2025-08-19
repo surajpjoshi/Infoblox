@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SOP: Infoblox NIOS Initial CLI Setup (Standalone)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #11162a;
+      --muted: #8ea0b3;
+      --text: #e8eef5;
+      --accent: #6ca0ff;
+      --ok: #2ecc71;
+      --warn: #f39c12;
+      --err: #ff6b6b;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: linear-gradient(180deg, #0b1020, #0a0e1a); color: var(--text); }
+    .wrap { max-width: 1100px; margin: 32px auto; padding: 0 16px 64px; }
+    header { display: grid; gap: 8px; margin-bottom: 20px; }
+    h1 { font-size: 28px; margin: 0; letter-spacing: .2px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
+    section { background: var(--card); border: 1px solid rgba(255,255,255,.06); border-radius: 16px; padding: 18px; margin: 14px 0; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+    h2 { font-size: 18px; margin: 0 0 12px; }
+    h3 { font-size: 15px; margin: 14px 0 8px; color: #c9d9ff; }
+    .grid { display: grid; gap: 12px; }
+    .grid.two { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+    .muted { color: var(--muted); }
+    .kbd { display: inline-block; font-family: var(--mono); background: #0d1220; border: 1px solid rgba(255,255,255,.08); padding: 2px 6px; border-radius: 6px; font-size: 13px; }
+    code, pre { font-family: var(--mono); font-size: 13px; }
+    pre { background: #0c1222; border: 1px solid rgba(255,255,255,.09); padding: 12px; border-radius: 12px; overflow: auto; }
+    .note { border-left: 4px solid var(--accent); padding: 10px 12px; background: #0d1430; border-radius: 10px; }
+    .ok { color: var(--ok); }
+    .warn { color: var(--warn); }
+    .err { color: var(--err); }
+    table { width: 100%; border-collapse: collapse; background: #0b1226; border-radius: 12px; overflow: hidden; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.07); }
+    th { background: #0f1733; color: #cfe0ff; font-weight: 600; font-size: 13px; }
+    tr:last-child td { border-bottom: 0; }
+    .steps { counter-reset: step; }
+    .step { counter-increment: step; position: relative; padding-left: 46px; margin: 14px 0; }
+    .step:before { content: counter(step); position: absolute; left: 0; top: 0; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; background: #101a39; border: 1px solid rgba(255,255,255,.08); color: #bcd3ff; font-weight: 700; }
+    .footer { color: var(--muted); font-size: 12px; margin-top: 24px; }
+    .tag { display:inline-block; padding:3px 8px; border:1px solid rgba(255,255,255,.12); border-radius:999px; font-size:12px; margin-right:6px; }
+    .btn-row { display:flex; gap:10px; flex-wrap:wrap; }
+    button.copy { all: unset; cursor: pointer; padding: 8px 10px; border-radius: 10px; background:#132043; border:1px solid rgba(255,255,255,.12); font-size: 13px; }
+    .small { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>SOP: Infoblox NIOS – Initial CLI Setup (Standalone Node)</h1>
+      <div class="subtitle">Author: Suraj · Role: Network Lead · Last updated: 18 Aug 2025 · Scope: Lab/POC</div>
+      <div>
+        <span class="tag">Product: NIOS 9.0.3</span>
+        <span class="tag">Appliance: IB‑V815 (selected)</span>
+        <span class="tag">Mode: Standalone (no Grid join)</span>
+      </div>
+    </header>
+
+    <section>
+      <h2>Purpose</h2>
+      <p>Provision a fresh Infoblox NIOS VM from the CLI, set IPv4 networking, apply temporary licenses for DNS, DHCP & Grid, and verify basic reachability.</p>
+    </section>
+
+    <section>
+      <h2>Prerequisites</h2>
+      <div class="grid two">
+        <div>
+          <h3>Console Access</h3>
+          <ul>
+            <li>Hypervisor/Cloud serial console or <span class="kbd">VMRC</span>/<span class="kbd">VNC</span>.</li>
+            <li>Default admin credentials available.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Network Plan</h3>
+          <table>
+            <tr><th>Parameter</th><th>Value (example)</th></tr>
+            <tr><td>IPv4 address</td><td><span class="kbd">192.168.100.200</span></td></tr>
+            <tr><td>Netmask</td><td><span class="kbd">255.255.255.0</span></td></tr>
+            <tr><td>Gateway</td><td><span class="kbd">192.168.100.254</span></td></tr>
+            <tr><td>VLAN</td><td>Untagged</td></tr>
+          </table>
+        </div>
+      </div>
+      <p class="note small"><strong>Tip:</strong> Ensure the configured default gateway actually exists in the segment and the upstream L3 is reachable from the Infoblox LAN interface.</p>
+    </section>
+
+    <section>
+      <h2>Procedure</h2>
+      <ol class="steps">
+        <li class="step">
+          <strong>Log in to the CLI.</strong>
+          <pre><code>Disconnect NOW if you have not been expressly authorized to use this system.
+login: admin
+Local password:
+
+Infoblox &gt; </code></pre>
+        </li>
+        <li class="step">
+          <strong>Configure network settings.</strong>
+          <p>Use <span class="kbd">set network</span> to apply IPv4, netmask, gateway, and VLAN.</p>
+          <pre><code>Infoblox &gt; set network
+NOTICE: All HA configuration is performed from the GUI...
+Enter IP address: <span class="err">192.168.100.260</span>
+
+ERROR: 192.168.100.260 is not a valid IP address
+
+Enter IP address: 192.168.100.200
+Enter netmask [Default: 255.255.255.0]:
+Enter gateway address [Default: 192.168.100.1]: 192.168.100.254
+Enter VLAN tag [Default: Untagged]:
+Configure IPv6 network settings? (y or n): n
+Become grid member? (y or n): n
+
+ New Network Settings:
+  IPv4 address:         192.168.100.200
+  IPv4 Netmask:         255.255.255.0
+  IPv4 Gateway address: 192.168.100.254
+  IPv4 VLAN tag:        Untagged
+
+ Old IPv4 Network Settings:
+  IPv4 address:         192.168.1.2
+  IPv4 Netmask:         255.255.255.0
+  IPv4 Gateway address: 192.168.1.1
+  IPv4 VLAN tag:        Untagged
+        Is this correct? (y or n): y
+        Are you sure? (y or n): y
+Network settings have been updated.
+[2025/08/18 18:24:45.089] System restart...
+[2025/08/18 18:25:23.497] Infoblox system initializing...
+[2025/08/18 18:25:23.800] LAN port IPv4 192.168.100.200, netmask 255.255.255.0, gateway 192.168.100.254
+[2025/08/18 18:25:26.131] Starting services...</code></pre>
+          <p class="note small"><strong>Why the error?</strong> <span class="kbd">192.168.100.260</span> exceeds the <em>/24</em> host range (max host octet 254). Corrected to <span class="kbd">192.168.100.200</span>.</p>
+        </li>
+        <li class="step">
+          <strong>Verify gateway reachability (optional immediate test).</strong>
+          <pre><code>Infoblox &gt; ping 192.168.100.254
+From 192.168.100.200 icmp_seq=1 Destination Host Unreachable
+...
+100% packet loss</code></pre>
+          <p class="note small"><strong>Action:</strong> If unreachable, check upstream SVI/route, VLAN trunking/untagged port, and any MAC/ARP security. This does <em>not</em> block licensing or UI access if you connect from the same L2 segment.</p>
+        </li>
+        <li class="step">
+          <strong>Add temporary licenses.</strong>
+          <p>Applies 60‑day eval for DNS, DHCP, and Grid to enable features.</p>
+          <pre><code>Infoblox &gt; set temp_license
+Select license (1-18) or q to quit: 2
+Are you sure you want to do this? (y or n): y
+DNS temporary license installed.
+DHCP temporary license installed.
+Grid temporary license installed.
+
+The UI needs to be restarted ... (y or n): y
+Are you sure you want to do this? (y or n): y
+UI restarted.</code></pre>
+        </li>
+        <li class="step">
+          <strong>(Optional) Add specific NIOS model license key.</strong>
+          <p>Choose a virtual appliance model. Example below selects <span class="kbd">IB‑V815</span>.</p>
+          <pre><code>Infoblox &gt; set temp_license
+Select license (1-18) or q to quit: 4
+...
+Enter a number corresponding to a NIOS model (1 - 29) or q to quit: 4  # IB-V815</code></pre>
+        </li>
+        <li class="step">
+          <strong>Access the web UI.</strong>
+          <p>Browse to <span class="kbd">https://192.168.100.200</span>. Accept the certificate warning. Log in with <span class="kbd">admin</span> and your password.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Validation Checklist</h2>
+      <ul>
+        <li class="ok">CLI shows LAN IPv4 as <span class="kbd">192.168.100.200/24</span>.</li>
+        <li class="ok">Web UI loads over HTTPS and reflects temporary licenses.</li>
+        <li class="ok"><em>(If required)</em> Ping/ARP to default gateway succeeds.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Troubleshooting Quick Hits</h2>
+      <ul>
+        <li><strong>No gateway reachability:</strong> Verify switchport access VLAN or trunk native VLAN; ensure SVI <span class="kbd">192.168.100.254</span> exists and is up; check ACLs.</li>
+        <li><strong>License not visible in UI:</strong> Restarted UI? Re‑login. From CLI, run <span class="kbd">show license</span>.</li>
+        <li><strong>Wrong IP entered:</strong> Re‑run <span class="kbd">set network</span>; confirm before reboot.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Command Snippets</h2>
+      <pre><code># Set network (IPv4 only, standalone)
+set network
+# Quick reachability test
+ping 192.168.100.254
+# Apply temp DNS+DHCP+Grid license bundle
+set temp_license  # then choose option 2 (DNSone with Grid)
+# Add NIOS model key (optional)
+set temp_license  # choose option 4, then select model (e.g., 4 = IB-V815)
+# Show interfaces & licenses
+show interface
+show license</code></pre>
+    </section>
+
+    <section>
+      <h2>Change Log</h2>
+      <table>
+        <tr><th>Date</th><th>Editor</th><th>Change</th></tr>
+        <tr><td>18 Aug 2025</td><td>Suraj</td><td>Initial draft from console transcript; standardized steps & notes.</td></tr>
+      </table>
+      <p class="footer">© 2025 – Internal use (Lab/POC). Replace example IPs for production.</p>
+    </section>
+  </div>
+</body>
+</html>

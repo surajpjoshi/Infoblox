@@ -135,16 +135,46 @@ Network settings have been updated.
           
           <strong>Add temporary licenses.</strong>
           <p>Applies 60‑day eval for DNS, DHCP, and Grid to enable features.</p>
-          <pre><code>Infoblox &gt; set temp_license
+          <pre><code>
+
+Infoblox > set temp_license
+
+  1. DNSone (DNS, DHCP)
+  2. DNSone with Grid (DNS, DHCP, Grid)
+  3. Network Services for Voice (DHCP, Grid)
+  4. Add NIOS License
+  5. Add DNS Server license
+  6. Add DHCP Server license
+  7. Add Grid license
+  8. Add Microsoft management license
+  9. Add Multi-Grid Management license
+ 10. Add Query Redirection license
+ 11. Add Response Policy Zones license
+ 12. Add FireEye license
+ 13. Add DNS Traffic Control license
+ 14. Add Cloud Network Automation license
+ 15. Add Security Ecosystem license
+ 16. Add Threat Analytics license
+ 17. Add Flex Grid Activation license
+ 18. Add Flex Grid Activation for Managed Services license
+
 Select license (1-18) or q to quit: 2
+
+This action will generate a temporary 60-day DNSone with Grid license.
 Are you sure you want to do this? (y or n): y
 DNS temporary license installed.
 DHCP temporary license installed.
 Grid temporary license installed.
 
-The UI needs to be restarted ... (y or n): y
+Temporary license is installed.
+
+
+The UI needs to be restarted in order to reflect license changes.
+Restart UI now, this will log out all UI users? (y or n):y
+
 Are you sure you want to do this? (y or n): y
-UI restarted.</code></pre>
+UI restarted.
+</code></pre>
         </li>
         <li class="step">
           <strong>(Optional) Add specific NIOS model license key.</strong>

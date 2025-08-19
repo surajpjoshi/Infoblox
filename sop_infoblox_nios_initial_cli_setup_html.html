@@ -97,7 +97,7 @@
           <strong>Log in to the CLI.</strong>
           <pre><code>Disconnect NOW if you have not been expressly authorized to use this system.
 login: admin
-Local password:
+Local password:info
 
 Infoblox &gt; </code></pre>
         </li>
@@ -106,9 +106,6 @@ Infoblox &gt; </code></pre>
           <p>Use <span class="kbd">set network</span> to apply IPv4, netmask, gateway, and VLAN.</p>
           <pre><code>Infoblox &gt; set network
 NOTICE: All HA configuration is performed from the GUI...
-Enter IP address: <span class="err">192.168.100.260</span>
-
-ERROR: 192.168.100.260 is not a valid IP address
 
 Enter IP address: 192.168.100.200
 Enter netmask [Default: 255.255.255.0]:
@@ -135,17 +132,7 @@ Network settings have been updated.
 [2025/08/18 18:25:23.497] Infoblox system initializing...
 [2025/08/18 18:25:23.800] LAN port IPv4 192.168.100.200, netmask 255.255.255.0, gateway 192.168.100.254
 [2025/08/18 18:25:26.131] Starting services...</code></pre>
-          <p class="note small"><strong>Why the error?</strong> <span class="kbd">192.168.100.260</span> exceeds the <em>/24</em> host range (max host octet 254). Corrected to <span class="kbd">192.168.100.200</span>.</p>
-        </li>
-        <li class="step">
-          <strong>Verify gateway reachability (optional immediate test).</strong>
-          <pre><code>Infoblox &gt; ping 192.168.100.254
-From 192.168.100.200 icmp_seq=1 Destination Host Unreachable
-...
-100% packet loss</code></pre>
-          <p class="note small"><strong>Action:</strong> If unreachable, check upstream SVI/route, VLAN trunking/untagged port, and any MAC/ARP security. This does <em>not</em> block licensing or UI access if you connect from the same L2 segment.</p>
-        </li>
-        <li class="step">
+          
           <strong>Add temporary licenses.</strong>
           <p>Applies 60‑day eval for DNS, DHCP, and Grid to enable features.</p>
           <pre><code>Infoblox &gt; set temp_license

@@ -18,9 +18,8 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { height: 100%; margin: 0; padding: 0; }
     body {
-      margin: 0;
       font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
       background: radial-gradient(1400px 800px at 70% -10%, #122060, transparent 60%), var(--bg);
       color: var(--text);
@@ -40,7 +39,8 @@
 
     .toolbar { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+    /* Full-width container */
+    .container { width: 100%; margin: 20px 0; padding: 0 16px; }
 
     .panel {
       background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
@@ -74,7 +74,13 @@
     .btn.ghost { background: transparent; border-color: rgba(255,255,255,.18); color: var(--accent-2); }
     .btn.danger { background: linear-gradient(180deg, #ff7575, #c43a3a); }
 
-    .note-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    /* Note list full width */
+    .note-list { 
+      display: grid; 
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+      gap: 14px; 
+      width: 100%;
+    }
 
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
@@ -118,34 +124,32 @@
       <section class="panel">
         <h2 style="margin:0 0 6px">Add / Edit Note</h2>
         <p class="muted" style="margin-top:0">Tip: store images in your repo's <code>images/</code> folder and use a relative URL like <code>images/pic.jpg</code>.</p>
-        <form id="noteForm" onsubmit="event.preventDefault();">
-          <div class="row">
-            <div>
-              <label>Title</label>
-              <input id="title" type="text" placeholder="e.g., ISE Troubleshooting Tips" />
-            </div>
-            <div>
-              <label>Tags (comma separated)</label>
-              <input id="tags" type="text" placeholder="ise, radius, aaa" />
-            </div>
+        <div class="row">
+          <div>
+            <label>Title</label>
+            <input id="title" type="text" placeholder="e.g., ISE Troubleshooting Tips" />
           </div>
-          <label>Body (plain text or quick notes)</label>
-          <textarea id="body" placeholder="Write your notes here..."></textarea>
-          <div class="row3">
-            <div>
-              <label>Image URL (optional)</label>
-              <input id="imageUrl" type="url" placeholder="images/screenshot.png or https://..." />
-            </div>
-            <div>
-              <label>Link URL (optional)</label>
-              <input id="linkUrl" type="url" placeholder="https://useful-link.example" />
-            </div>
-            <div>
-              <label>&nbsp;</label>
-              <button id="saveBtn" type="button" class="btn" style="width:100%">Save Note</button>
-            </div>
+          <div>
+            <label>Tags (comma separated)</label>
+            <input id="tags" type="text" placeholder="ise, radius, aaa" />
           </div>
-        </form>
+        </div>
+        <label>Body (plain text or quick notes)</label>
+        <textarea id="body" placeholder="Write your notes here..."></textarea>
+        <div class="row3">
+          <div>
+            <label>Image URL (optional)</label>
+            <input id="imageUrl" type="url" placeholder="images/screenshot.png or https://..." />
+          </div>
+          <div>
+            <label>Link URL (optional)</label>
+            <input id="linkUrl" type="url" placeholder="https://useful-link.example" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="saveBtn" class="btn" style="width:100%">Save Note</button>
+          </div>
+        </div>
       </section>
 
       <section class="panel">
@@ -163,6 +167,7 @@
   </main>
 
   <script>
+    // --- Storage helpers ---
     const KEY = 'my-notes-v1';
     const $ = (sel) => document.querySelector(sel);
 
@@ -174,6 +179,7 @@
       render();
     }
 
+    // --- UI elements ---
     const titleEl = $('#title');
     const bodyEl = $('#body');
     const tagsEl = $('#tags');
@@ -184,21 +190,24 @@
     const searchEl = $('#search');
     const saveBtn = $('#saveBtn');
 
-    let editingId = null;
+    let editingId = null; // when set, Save updates the note
 
     function createNoteCard(note) {
       const card = document.createElement('article');
       card.className = 'card';
 
-      if (note.imageUrl?.trim()) {
+      // Image
+      const imgSrc = note.imageUrl?.trim();
+      if (imgSrc) {
         const img = document.createElement('img');
         img.className = 'thumb';
         img.loading = 'lazy';
         img.alt = note.title || 'note image';
-        img.src = note.imageUrl;
+        img.src = imgSrc;
         card.appendChild(img);
       }
 
+      // Content
       const content = document.createElement('div');
       content.className = 'content';
 
@@ -230,15 +239,9 @@
 
       card.appendChild(content);
 
+      // Actions
       const actions = document.createElement('div');
       actions.className = 'actions';
-
-      const viewBtn = document.createElement('button');
-      viewBtn.className = 'btn ghost';
-      viewBtn.textContent = 'View';
-      viewBtn.onclick = () => {
-        alert(`Title: ${note.title}\nTags: ${(note.tags||[]).join(', ')}\n\n${note.body}`);
-      };
 
       const editBtn = document.createElement('button');
       editBtn.className = 'btn secondary';
@@ -262,7 +265,7 @@
         writeNotes(notes);
       };
 
-      actions.append(viewBtn, editBtn, delBtn);
+      actions.append(editBtn, delBtn);
       card.appendChild(actions);
 
       return card;
@@ -270,17 +273,21 @@
 
     function render() {
       const q = searchEl.value.trim().toLowerCase();
-      const notes = readNotes().sort((a,b) => (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt));
+      const notes = readNotes()
+        .sort((a,b) => (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt));
 
-      const filtered = q ? notes.filter(n =>
-        (n.title||'').toLowerCase().includes(q) ||
-        (n.body||'').toLowerCase().includes(q) ||
-        (n.tags||[]).join(',').toLowerCase().includes(q)
-      ) : notes;
+      const filtered = q
+        ? notes.filter(n =>
+            (n.title||'').toLowerCase().includes(q) ||
+            (n.body||'').toLowerCase().includes(q) ||
+            (n.tags||[]).join(',').toLowerCase().includes(q)
+          )
+        : notes;
 
       listEl.innerHTML = '';
       filtered.forEach(n => listEl.appendChild(createNoteCard(n)));
-      countPill.textContent = `${filtered.length} note${filtered.length===1?'':'s'}`;
+      const count = filtered.length;
+      countPill.textContent = `${count} note${count===1?'':'s'}`;
     }
 
     function saveNote() {
@@ -304,12 +311,14 @@
         notes.push(note);
       }
 
+      // Clear form
       titleEl.value = bodyEl.value = imageUrlEl.value = linkUrlEl.value = '';
       tagsEl.value = '';
 
       writeNotes(notes);
     }
 
+    // Export / Import / Clear
     function exportNotes() {
       const data = JSON.stringify(readNotes(), null, 2);
       const blob = new Blob([data], { type: 'application/json' });
@@ -340,6 +349,7 @@
       render();
     }
 
+    // Wire up
     saveBtn.addEventListener('click', saveNote);
     $('#exportBtn').addEventListener('click', exportNotes);
     $('#importFile').addEventListener('change', (e) => {
@@ -349,5 +359,8 @@
     $('#clearAllBtn').addEventListener('click', clearAll);
     searchEl.addEventListener('input', render);
 
+    // Initial render
     render();
   </script>
+</body>
+</html>
